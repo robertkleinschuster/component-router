@@ -2,4 +2,4 @@
 
 declare(strict_types=1);
 
-return fn() => 'sub-page';
+return fn() => 'sub page';

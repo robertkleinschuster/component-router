@@ -35,26 +35,18 @@ class RouterTest extends TestCase
     public function testShouldFindRoutesToPagesInDirectory()
     {
         $router = new Router(self::ROUTES, self::ROUTES_CACHE);
-        $routes = $router->getRoutes();
 
-        self::assertCount(5, $routes);
-
-        $indexRoute = $routes[0];
-        $subPageRoute = $routes[1];
-        $postRoute = $routes[2];
-        $subpageGet = $routes[3];
-        $subpagePost = $routes[4];
-
-        self::assertEquals(__DIR__ . '/routes/page.php', $indexRoute->file);
-        self::assertEquals('/', $indexRoute->path);
-        self::assertEquals(__DIR__ . '/routes/sub-page/page.php', $subPageRoute->file);
-        self::assertEquals('/sub-page', $subPageRoute->path);
-        self::assertEquals(RouteMethod::POST, $postRoute->method);
-        self::assertEquals(__DIR__ . '/routes/handler.php', $postRoute->file);
-
-        self::assertEquals('page', $indexRoute->getHandler()());
-        self::assertEquals('post', $postRoute->getHandler()());
-        self::assertEquals('sub page get', $subpageGet->getHandler()());
-        self::assertEquals('sub page post', $subpagePost->getHandler()());
+        self::assertEquals('/', $router->match(RouteMethod::GET, '/')->path);
+        self::assertEquals(__DIR__ . '/routes/page.php', $router->match(RouteMethod::GET, '/')->file);
+        self::assertEquals(__DIR__ . '/routes/sub-page/page.php', $router->match(RouteMethod::GET, '/sub-page')->file);
+        self::assertEquals('/sub-page', $router->match(RouteMethod::GET, '/sub-page')->path);
+        self::assertEquals(__DIR__ . '/routes/handler.php', $router->match(RouteMethod::POST, '/')->file);
+        self::assertEquals(RouteMethod::POST, $router->match(RouteMethod::POST, '/')->method);
+        self::assertEquals('page', $router->match(RouteMethod::GET, '/')->getHandler()());
+        self::assertEquals('post', $router->match(RouteMethod::POST, '/')->getHandler()());
+        self::assertEquals('sub page', $router->match(RouteMethod::GET, '/sub-page')->getHandler()());
+        self::assertEquals('sub page post', $router->match(RouteMethod::POST, '/sub-page')->getHandler()());
+        self::assertEquals('sub page put', $router->match(RouteMethod::PUT, '/sub-page')->getHandler()());
+        self::assertEquals(__DIR__ . '/routes/layout.php', $router->match(RouteMethod::GET, '/sub-page')->layout);
     }
 }

@@ -9,7 +9,7 @@ use Robs\Component\Router\Exception\RouterException;
 
 final class Route
 {
-    public function __construct(public string $path, public string $file, public RouteType $type, public RouteMethod $method)
+    public function __construct(public string $path, public string $file, public RouteType $type, public RouteMethod $method, public ?string $layout = null)
     {
     }
 
@@ -47,6 +47,6 @@ final class Route
 
     public static function __set_state(array $data): Route
     {
-        return new Route($data['path'], $data['file'], $data['type'], $data['method']);
+        return new Route($data['path'], $data['file'], $data['type'], $data['method'], $data['layout']);
     }
 }

@@ -8,6 +8,7 @@ final class Router
 {
     private const PAGE_FILENAME = 'page.php';
     private const HANDLER_FILENAME = 'handler.php';
+    private const LAYOUT_FILENAME = 'layout.php';
 
     /**
      * @var Route[]
@@ -23,17 +24,14 @@ final class Router
         }
     }
 
-    /**
-     * @return Route[]
-     */
-    public function getRoutes(): array
+    public function match(RouteMethod $method, string $path): ?Route
     {
-        return $this->routes;
+        return $this->routes[$method->name . ' ' . $path] ?? null;
     }
 
     private function addRoute(Route $route): void
     {
-        $this->routes[] = $route;
+        $this->routes[$route->method->name . ' ' . $route->path] = $route;
     }
 
     private function buildRoutes(string $filename, string $suffix): void
@@ -76,7 +74,17 @@ final class Router
                 $this->addRoute(new Route($path, $filename, RouteType::HANDLER, RouteMethod::PATCH));
             }
         } else {
-            $this->addRoute(new Route($path, $filename, RouteType::PAGE, RouteMethod::GET));
+            $layout = dirname($filename) . '/' . self::LAYOUT_FILENAME;
+
+            while (!file_exists($layout) && dirname($layout) !== $this->directory) {
+                $layout = dirname($layout, 2) . '/' . self::LAYOUT_FILENAME;
+            }
+
+            if (!file_exists($layout)) {
+                $layout = null;
+            }
+
+            $this->addRoute(new Route($path, $filename, RouteType::PAGE, RouteMethod::GET, $layout));
         }
     }
 
