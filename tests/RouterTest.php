@@ -47,6 +47,7 @@ class RouterTest extends TestCase
         self::assertEquals('sub page', $router->match(RouteMethod::GET, '/sub-page')->getHandler()());
         self::assertEquals('sub page post', $router->match(RouteMethod::POST, '/sub-page')->getHandler()());
         self::assertEquals('sub page put', $router->match(RouteMethod::PUT, '/sub-page')->getHandler()());
+        self::assertEquals(__DIR__ . '/routes/layout.php', $router->match(RouteMethod::GET, '/')->layout);
         self::assertEquals(__DIR__ . '/routes/layout.php', $router->match(RouteMethod::GET, '/sub-page')->layout);
     }
 }

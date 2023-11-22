@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 namespace Robs\Component\Router;
 
-final class Router
+class Router
 {
     private const PAGE_FILENAME = 'page.php';
     private const HANDLER_FILENAME = 'handler.php';
