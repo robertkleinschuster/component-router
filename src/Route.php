@@ -21,26 +21,17 @@ final class Route
         if ($this->type === RouteType::HANDLER) {
             /** @var Handler $handler */
             $handler = require $this->file;
-            switch ($this->method) {
-                case RouteMethod::GET:
-                    return $handler->get;
-                case RouteMethod::POST:
-                    return $handler->post;
-                case RouteMethod::HEAD:
-                    return $handler->head;
-                case RouteMethod::PUT:
-                    return $handler->put;
-                case RouteMethod::DELETE:
-                    return $handler->delete;
-                case RouteMethod::CONNECT:
-                    return $handler->connect;
-                case RouteMethod::OPTIONS:
-                    return $handler->options;
-                case RouteMethod::TRACE:
-                    return $handler->trace;
-                case RouteMethod::PATCH:
-                    return $handler->patch;
-            }
+            return match ($this->method) {
+                RouteMethod::GET => $handler->get,
+                RouteMethod::POST => $handler->post,
+                RouteMethod::HEAD => $handler->head,
+                RouteMethod::PUT => $handler->put,
+                RouteMethod::DELETE => $handler->delete,
+                RouteMethod::CONNECT => $handler->connect,
+                RouteMethod::OPTIONS => $handler->options,
+                RouteMethod::TRACE => $handler->trace,
+                RouteMethod::PATCH => $handler->patch
+            };
         }
         throw new RouterException('Could not locate handler for route.');
     }
