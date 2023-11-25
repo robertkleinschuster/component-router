@@ -29,6 +29,14 @@ class Router
         return $this->routes[$method->name . ' ' . $path] ?? null;
     }
 
+    /**
+     * @return Route[]
+     */
+    public function getRoutes(): array
+    {
+        return $this->routes;
+    }
+
     private function addRoute(Route $route): void
     {
         $this->routes[$route->method->name . ' ' . $route->path] = $route;
