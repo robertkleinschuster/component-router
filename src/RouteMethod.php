@@ -15,4 +15,9 @@ enum RouteMethod
     case OPTIONS;
     case TRACE;
     case PATCH;
+
+    public function is(RouteMethod $method): bool
+    {
+        return $this === $method;
+    }
 }
