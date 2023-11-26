@@ -58,6 +58,16 @@ final readonly class Route
         throw new RouterException('Could not locate handler for route.');
     }
 
+    /**
+     * @param ...$args
+     * @return mixed
+     * @throws RouterException
+     */
+    public function __invoke(...$args): mixed
+    {
+        return $this->createHandler()(...$args);
+    }
+
     public static function __set_state(array $data): Route
     {
         return new Route(
