@@ -6,7 +6,7 @@ namespace Robs\Component\Router;
 
 readonly class Meta
 {
-    public function __construct(public string $title, public string $description)
+    public function __construct(public string $language, public string $title, public string $description)
     {
     }
 }
