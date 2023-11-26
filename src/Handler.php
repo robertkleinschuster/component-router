@@ -6,19 +6,20 @@ namespace Robs\Component\Router;
 
 use Closure;
 
-class Handler
+readonly class Handler
 {
     public function __construct(
-        public ?Closure $get = null,
-        public ?Closure $head = null,
-        public ?Closure $post = null,
-        public ?Closure $put = null,
-        public ?Closure $delete = null,
-        public ?Closure $connect = null,
-        public ?Closure $options = null,
-        public ?Closure $trace = null,
-        public ?Closure $patch = null,
+        public Closure     $handler,
+        public RouteMethod $method = RouteMethod::GET,
+        public RouteType   $type = RouteType::HANDLER,
+        public ?Meta $meta = null,
+        public ?object $model = null
     )
     {
+    }
+
+    public function __invoke(...$args)
+    {
+        return ($this->handler)(...$args);
     }
 }

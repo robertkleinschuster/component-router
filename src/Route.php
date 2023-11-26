@@ -4,40 +4,70 @@ declare(strict_types=1);
 
 namespace Robs\Component\Router;
 
-use Closure;
 use Robs\Component\Router\Exception\RouterException;
 
-final class Route
+final readonly class Route
 {
-    public function __construct(public string $path, public string $file, public RouteType $type, public RouteMethod $method, public ?string $layout = null)
+    public function __construct(
+        public string      $name,
+        public string      $path,
+        public string      $file,
+        public RouteType   $type,
+        public RouteMethod $method,
+        public ?int        $index = null,
+        public ?string     $layout = null,
+    )
     {
     }
 
-    public function getHandler(): Closure
+    /**
+     * @return Handler
+     * @throws RouterException
+     */
+    public function createHandler(): Handler
     {
         if ($this->type === RouteType::PAGE) {
-            return require $this->file;
+            $page = require $this->file;
+            if ($page instanceof Page) {
+                return new Handler(
+                    handler: $page->view,
+                    method: $this->method,
+                    type: $this->type,
+                    meta: $page->meta,
+                    model: $page->model
+                );
+            } else {
+                return new Handler(
+                    handler: $page,
+                    method: $this->method,
+                    type: $this->type
+                );
+            }
         }
         if ($this->type === RouteType::HANDLER) {
-            /** @var Handler $handler */
+            /** @var Handler|Handler[] $handler */
             $handler = require $this->file;
-            return match ($this->method) {
-                RouteMethod::GET => $handler->get,
-                RouteMethod::POST => $handler->post,
-                RouteMethod::HEAD => $handler->head,
-                RouteMethod::PUT => $handler->put,
-                RouteMethod::DELETE => $handler->delete,
-                RouteMethod::CONNECT => $handler->connect,
-                RouteMethod::OPTIONS => $handler->options,
-                RouteMethod::TRACE => $handler->trace,
-                RouteMethod::PATCH => $handler->patch
-            };
+
+            if (null === $this->index) {
+                return $handler;
+            } else {
+                return $handler[$this->index];
+
+            }
         }
         throw new RouterException('Could not locate handler for route.');
     }
 
     public static function __set_state(array $data): Route
     {
-        return new Route($data['path'], $data['file'], $data['type'], $data['method'], $data['layout']);
+        return new Route(
+            name: $data['name'],
+            path: $data['path'],
+            file: $data['file'],
+            type: $data['type'],
+            method: $data['method'],
+            index: $data['index'],
+            layout: $data['layout']
+        );
     }
 }

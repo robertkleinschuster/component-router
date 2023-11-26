@@ -4,6 +4,9 @@ declare(strict_types=1);
 
 namespace Robs\Component\Router;
 
+use Closure;
+use Robs\Component\Router\Exception\RouterException;
+
 class Router
 {
     private const PAGE_FILENAME = 'page.php';
@@ -24,22 +27,25 @@ class Router
         }
     }
 
-    public function match(RouteMethod $method, string $path): ?Route
+    public function getRoute(RouteMethod $method, string $path): ?Route
     {
-        return $this->routes[$method->name . ' ' . $path] ?? null;
+        return $this->routes[$this->buildRouteName($method, $path)] ?? null;
     }
 
     /**
      * @return Route[]
      */
-    public function getRoutes(): array
+    public function getAllRoutes(): array
     {
         return $this->routes;
     }
 
     private function addRoute(Route $route): void
     {
-        $this->routes[$route->method->name . ' ' . $route->path] = $route;
+        if (isset($this->routes[$route->name])) {
+            throw new RouterException(sprintf('Duplicate route definition: %s', $route->name));
+        }
+        $this->routes[$route->name] = $route;
     }
 
     private function buildRoutes(string $filename, string $suffix): void
@@ -52,34 +58,26 @@ class Router
         if ($path !== '/') {
             $path = rtrim($path, '/');
         }
+        /** @var Closure|Handler|Handler[] $handler */
         $handler = require $filename;
         if ($handler instanceof Handler) {
-            if ($handler->get) {
-                $this->addRoute(new Route($path, $filename, RouteType::HANDLER, RouteMethod::GET));
-            }
-            if ($handler->head) {
-                $this->addRoute(new Route($path, $filename, RouteType::HANDLER, RouteMethod::HEAD));
-            }
-            if ($handler->post) {
-                $this->addRoute(new Route($path, $filename, RouteType::HANDLER, RouteMethod::POST));
-            }
-            if ($handler->put) {
-                $this->addRoute(new Route($path, $filename, RouteType::HANDLER, RouteMethod::PUT));
-            }
-            if ($handler->delete) {
-                $this->addRoute(new Route($path, $filename, RouteType::HANDLER, RouteMethod::DELETE));
-            }
-            if ($handler->connect) {
-                $this->addRoute(new Route($path, $filename, RouteType::HANDLER, RouteMethod::CONNECT));
-            }
-            if ($handler->options) {
-                $this->addRoute(new Route($path, $filename, RouteType::HANDLER, RouteMethod::OPTIONS));
-            }
-            if ($handler->trace) {
-                $this->addRoute(new Route($path, $filename, RouteType::HANDLER, RouteMethod::TRACE));
-            }
-            if ($handler->patch) {
-                $this->addRoute(new Route($path, $filename, RouteType::HANDLER, RouteMethod::PATCH));
+            $this->addRoute(new Route(
+                name: $this->buildRouteName($handler->method, $path),
+                path: $path,
+                file: $filename,
+                type: $handler->type,
+                method: $handler->method
+            ));
+        } elseif (is_array($handler)) {
+            foreach ($handler as $index => $h) {
+                $this->addRoute(new Route(
+                    name: $this->buildRouteName($h->method, $path),
+                    path: $path,
+                    file: $filename,
+                    type: $h->type,
+                    method: $h->method,
+                    index: $index
+                ));
             }
         } else {
             $layout = dirname($filename) . '/' . self::LAYOUT_FILENAME;
@@ -92,8 +90,20 @@ class Router
                 $layout = null;
             }
 
-            $this->addRoute(new Route($path, $filename, RouteType::PAGE, RouteMethod::GET, $layout));
+            $this->addRoute(new Route(
+                name: $this->buildRouteName(RouteMethod::GET, $path),
+                path: $path,
+                file: $filename,
+                type: RouteType::PAGE,
+                method: RouteMethod::GET,
+                layout: $layout
+            ));
         }
+    }
+
+    private function buildRouteName(RouteMethod $method, string $path): string
+    {
+        return $method->name . ' ' . $path;
     }
 
     private function buildFilename(string $filename): void

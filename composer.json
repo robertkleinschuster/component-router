@@ -15,6 +15,9 @@
     "php": "^8.2"
   },
   "autoload": {
+    "files": [
+      "functions.php"
+    ],
     "psr-4": {
       "Robs\\Component\\Router\\": "src"
     }
