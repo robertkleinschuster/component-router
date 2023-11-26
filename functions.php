@@ -48,7 +48,7 @@ function page(Closure $view, ?Meta $meta = null, ?object $model = null): Page
     return new Page($view, $meta, $model);
 }
 
-function meta(string $title, string $description): Meta
+function meta(string $language, string $title, string $description): Meta
 {
-    return new Meta($title, $description);
+    return new Meta($language, $title, $description);
 }
