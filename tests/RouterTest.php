@@ -8,6 +8,7 @@ use Robs\Component\Router\Exception\RouterException;
 use Robs\Component\Router\RouteMethod;
 use Robs\Component\Router\Router;
 use PHPUnit\Framework\TestCase;
+use Robs\Component\Router\RouteType;
 
 class RouterTest extends TestCase
 {
@@ -41,21 +42,51 @@ class RouterTest extends TestCase
     {
         $router = new Router(self::ROUTES, self::ROUTES_CACHE);
 
-        self::assertEquals('/', $router->getRoute(RouteMethod::GET, '/')->path);
-        self::assertEquals(__DIR__ . '/routes/page.php', $router->getRoute(RouteMethod::GET, '/')->file);
-        self::assertEquals(__DIR__ . '/routes/sub-page/page.php', $router->getRoute(RouteMethod::GET, '/sub-page')->file);
-        self::assertEquals('/sub-page', $router->getRoute(RouteMethod::GET, '/sub-page')->path);
-        self::assertEquals(__DIR__ . '/routes/handler.php', $router->getRoute(RouteMethod::POST, '/')->file);
-        self::assertEquals(RouteMethod::POST, $router->getRoute(RouteMethod::POST, '/')->method);
-        self::assertEquals('page', $router->getRoute(RouteMethod::GET, '/')->createHandler()());
-        self::assertEquals('post', $router->getRoute(RouteMethod::POST, '/')->createHandler()());
-        self::assertEquals('sub page', $router->getRoute(RouteMethod::GET, '/sub-page')->createHandler()());
-        self::assertEquals('sub page post', $router->getRoute(RouteMethod::POST, '/sub-page')->createHandler()());
-        self::assertEquals('sub page put', $router->getRoute(RouteMethod::PUT, '/sub-page')->createHandler()());
-        self::assertEquals(__DIR__ . '/routes/layout.php', $router->getRoute(RouteMethod::GET, '/')->layout);
-        self::assertEquals(__DIR__ . '/routes/layout.php', $router->getRoute(RouteMethod::GET, '/sub-page')->layout);
+        self::assertCount(5, $router->getAllRoutes());
+
+        // startpage
+        $route = $router->getRoute(RouteMethod::GET, '/');
+        self::assertEquals('/', $route->path);
+        self::assertEquals(__DIR__ . '/routes/page.php', $route->file);
+        self::assertEquals(__DIR__ . '/routes/layout.php', $route->layout);
+        self::assertNull($route->index);
+        self::assertEquals(RouteMethod::GET, $route->method);
+        self::assertEquals(RouteType::PAGE, $route->type);
+
+        // sub-page
+        $route = $router->getRoute(RouteMethod::GET, '/sub-page');
+        self::assertEquals('/sub-page', $route->path);
+        self::assertEquals(__DIR__ . '/routes/sub-page/page.php', $route->file);
+        self::assertNull($route->layout);
+        self::assertEquals(RouteMethod::GET, $route->method);
+        self::assertEquals(RouteType::PAGE, $route->type);
+
+        // handler
+        $route = $router->getRoute(RouteMethod::POST, '/');
+        self::assertEquals('/', $route->path);
+        self::assertEquals(__DIR__ . '/routes/handler.php', $route->file);
+        self::assertNull($route->layout);
+        self::assertEquals(RouteMethod::POST, $route->method);
+        self::assertEquals(RouteType::HANDLER, $route->type);
     }
 
+    public function testBuildRouteNames()
+    {
+        $router = new Router(self::ROUTES, self::ROUTES_CACHE);
+        $route = $router->getRoute(RouteMethod::GET, '/sub-page');
+
+        self::assertEquals('GET /sub-page', $route->name);
+    }
+
+    public function testShouldSaveTheIndexForArrayHandlers()
+    {
+        $router = new Router(self::ROUTES, self::ROUTES_CACHE);
+
+        $route = $router->getRoute(RouteMethod::POST, '/sub-page');
+        self::assertEquals(0, $route->index);
+        $route = $router->getRoute(RouteMethod::PUT, '/sub-page');
+        self::assertEquals(1, $route->index);
+    }
 
     public function testShouldTransferMetaFromPageToHandler()
     {

@@ -5,13 +5,21 @@ declare(strict_types=1);
 namespace Robs\Component\Router;
 
 use Closure;
+use FilesystemIterator;
+use RecursiveDirectoryIterator;
+use RecursiveIteratorIterator;
+use RecursiveRegexIterator;
+use RegexIterator;
 use Robs\Component\Router\Exception\RouterException;
+use SplFileInfo;
 
 class Router
 {
     private const PAGE_FILENAME = 'page.php';
     private const HANDLER_FILENAME = 'handler.php';
     private const LAYOUT_FILENAME = 'layout.php';
+
+    private RouteName $routeName;
 
     /**
      * @var Route[]
@@ -20,6 +28,7 @@ class Router
 
     public function __construct(private readonly string $directory, private readonly string $cache)
     {
+        $this->routeName = new RouteName();
         if (!file_exists($this->cache)) {
             $this->build();
         } else {
@@ -29,7 +38,7 @@ class Router
 
     public function getRoute(RouteMethod $method, string $path): ?Route
     {
-        return $this->routes[$this->buildRouteName($method, $path)] ?? null;
+        return $this->routes[$this->routeName->build($method, $path)] ?? null;
     }
 
     /**
@@ -48,84 +57,37 @@ class Router
         $this->routes[$route->name] = $route;
     }
 
-    private function buildRoutes(string $filename, string $suffix): void
+    /**
+     * @return iterable<Route>
+     * @throws RouterException
+     */
+    private function scanDirectory(): iterable
     {
-        $directory = rtrim($this->directory, '/');
+        $builder = new RouteBuilder();
 
-        $pageRelative = substr($filename, strlen($directory));
+        $directory = new RecursiveDirectoryIterator($this->directory, FilesystemIterator::SKIP_DOTS);
+        $iterator = new RecursiveIteratorIterator($directory);
 
-        $path = substr($pageRelative, 0, strlen($pageRelative) - strlen($suffix));
-        if ($path !== '/') {
-            $path = rtrim($path, '/');
-        }
-        /** @var Closure|Handler|Handler[] $handler */
-        $handler = require $filename;
-        if ($handler instanceof Handler) {
-            $this->addRoute(new Route(
-                name: $this->buildRouteName($handler->method, $path),
-                path: $path,
-                file: $filename,
-                type: $handler->type,
-                method: $handler->method
-            ));
-        } elseif (is_array($handler)) {
-            foreach ($handler as $index => $h) {
-                $this->addRoute(new Route(
-                    name: $this->buildRouteName($h->method, $path),
-                    path: $path,
-                    file: $filename,
-                    type: $h->type,
-                    method: $h->method,
-                    index: $index
-                ));
+        /** @var SplFileInfo $item */
+        foreach ($iterator as $item) {
+            if ($item->getFilename() === self::PAGE_FILENAME) {
+                $layout = $item->getPath() . DIRECTORY_SEPARATOR . self::LAYOUT_FILENAME;
+                if (!file_exists($layout)) {
+                    $layout = null;
+                }
+                yield from $builder->buildPage($this->directory, $item->getRealPath(), $layout);
             }
-        } else {
-            $layout = dirname($filename) . '/' . self::LAYOUT_FILENAME;
-
-            while (!file_exists($layout) && dirname($layout) !== $this->directory) {
-                $layout = dirname($layout, 2) . '/' . self::LAYOUT_FILENAME;
+            if ($item->getFilename() === self::HANDLER_FILENAME) {
+                yield from $builder->buildHandler($this->directory, $item->getRealPath());
             }
-
-            if (!file_exists($layout)) {
-                $layout = null;
-            }
-
-            $this->addRoute(new Route(
-                name: $this->buildRouteName(RouteMethod::GET, $path),
-                path: $path,
-                file: $filename,
-                type: RouteType::PAGE,
-                method: RouteMethod::GET,
-                layout: $layout
-            ));
         }
     }
-
-    private function buildRouteName(RouteMethod $method, string $path): string
-    {
-        return $method->name . ' ' . $path;
-    }
-
-    private function buildFilename(string $filename): void
-    {
-        $directory = rtrim($this->directory, '/');
-        $startPage = $directory . '/' . $filename;
-        if (file_exists($startPage)) {
-            $this->buildRoutes($startPage, $filename);
-        }
-
-        $pattern = $directory . '/**/' . $filename;
-        $files = glob($pattern);
-        foreach ($files as $file) {
-            $this->buildRoutes($file, $filename);
-        }
-    }
-
 
     private function build(): void
     {
-        $this->buildFilename(self::PAGE_FILENAME);
-        $this->buildFilename(self::HANDLER_FILENAME);
+        foreach ($this->scanDirectory() as $route) {
+            $this->addRoute($route);
+        }
 
         $cache = var_export($this->routes, true);
         file_put_contents($this->cache, '<?php return ' . $cache . ';');

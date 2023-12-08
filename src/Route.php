@@ -28,21 +28,27 @@ final readonly class Route
     {
         if ($this->type === RouteType::PAGE) {
             $page = require $this->file;
-            if ($page instanceof Page) {
-                return new Handler(
-                    handler: $page->view,
-                    method: $this->method,
-                    type: $this->type,
-                    meta: $page->meta,
-                    model: $page->model
-                );
-            } else {
-                return new Handler(
-                    handler: $page,
-                    method: $this->method,
-                    type: $this->type
-                );
+            if (!$page instanceof Page) {
+                $page = new Page(view: $page);;
             }
+
+            $layout = null;
+            if ($this->layout) {
+                $layout = require $this->layout;
+                if (!$layout instanceof Layout) {
+                    $layout = new Layout(view: $layout);
+                }
+            }
+
+            return new Handler(
+                method: $this->method,
+                type: $this->type,
+                page: $page,
+                layout: $layout,
+                meta: $page->meta,
+                model: $page->model
+            );
+
         }
         if ($this->type === RouteType::HANDLER) {
             /** @var Handler|Handler[] $handler */

@@ -12,7 +12,8 @@
     }
   ],
   "require": {
-    "php": "^8.2"
+    "php": "^8.2",
+    "robertkleinschuster/component-renderer": "dev-main"
   },
   "autoload": {
     "files": [

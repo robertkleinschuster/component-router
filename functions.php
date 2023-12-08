@@ -3,6 +3,7 @@
 declare(strict_types=1);
 
 use Robs\Component\Router\Handler;
+use Robs\Component\Router\Layout;
 use Robs\Component\Router\Meta;
 use Robs\Component\Router\Page;
 use Robs\Component\Router\RouteMethod;
@@ -15,7 +16,7 @@ function handler(
     ?Meta       $meta = null
 ): Handler
 {
-    return new Handler($handler, $method, $type, $meta);
+    return new Handler(method: $method, type: $type, handler: $handler, meta: $meta);
 }
 
 function handle_post(Closure $handler): Handler
@@ -46,6 +47,11 @@ function handle_get(Closure $handler): Handler
 function page(Closure $view, ?Meta $meta = null, ?object $model = null): Page
 {
     return new Page($view, $meta, $model);
+}
+
+function layout(Closure $view, ?Meta $meta = null, ?object $model = null): Layout
+{
+    return new Layout($view, $meta, $model);
 }
 
 function meta(string $language, string $title, string $description): Meta

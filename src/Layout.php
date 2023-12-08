@@ -6,10 +6,10 @@ namespace Robs\Component\Router;
 
 use Robs\Component\Renderer\Renderer;
 
-readonly class Page extends BaseView
+readonly class Layout extends BaseView
 {
     public function render(Renderer $renderer, $data = null): iterable
     {
-        yield ['meta' => $this->meta, 'model' => $this->model] => $this->view;
+        yield ['meta' => $this->meta, 'model' => $this->model, ] => $this->view;
     }
 }
